@@ -72,7 +72,7 @@ folder1.add(props, "constantSpeed").name("Constant Speed")
 
 const gravityFolder = folder1.addFolder("Gravity")
 gravityFolder.open()
-gravityFolder.add(props, "gyro").name("Use Gyroscope").listen()
+gravityFolder.add(props, "gyro").name("Use Gyroscope").listen().onChange(requestGyro)
 gravityFolder.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Horizontal").listen()
 gravityFolder.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Vertical").listen()
 
@@ -92,13 +92,19 @@ folder2.add(props, 'cursor').name("Show Cursor")
     document.body.setAttribute("class", value ? "" : "no-cursor")
 })
 
-canvas.addEventListener("click", () => {
-    if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
-        DeviceOrientationEvent.requestPermission()
-        .then(perm => props.gyro = perm === "granted")
-        .catch(console.warn)
+function requestGyro(){
+    try{
+        if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
+            window.DeviceOrientationEvent.requestPermission()
+            .then(perm => props.gyro = perm === "granted")
+            .catch(console.warn)
+        }
+    } catch(e){
+        console.warn(e)
     }
-})
+}
+
+canvas.addEventListener("click", requestGyro)
 
 window.addEventListener('deviceorientation', e => {
     if(props.gyro){
