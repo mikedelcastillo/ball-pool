@@ -31,7 +31,7 @@ const props = {
     size: 24,
     sizeRandom: 0.6,
 
-    background: [30, 30, 30],
+    background: [10, 10, 10],
     hot: [255, 255, 0],
     cold: [255, 0, 0],
 
@@ -72,7 +72,15 @@ gui.addColor(props, "cold").name("Cold")
 
 gui.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Gravity X").listen()
 gui.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Gravity Y").listen()
-gui.add(props, "gyro").name("Gyroscope")
+const guiGyro = gui.add(props, "gyro").name("Gyroscope").listen()
+.onChange(async value => {
+    if(value){
+        if(DeviceOrientationEvent && DeviceOrientationEvent.requestPermission){
+            let perm = await DeviceOrientationEvent.requestPermission()
+            props.gyro = perm === "granted" 
+        }
+    }
+})
 
 // gui.add(props, "friction", 0.9, 1).step(0.001).name("Friction")
 // gui.add(props, "bounce", 0.5, 1).step(0.1).name("Bounce")
@@ -85,15 +93,12 @@ gui.add(props, 'cursor').name("Show Cursor")
     document.body.setAttribute("class", value ? "" : "no-cursor")
 })
 
-let gyroscope = new Gyroscope({frequency: 60})
-
-gyroscope.addEventListener('reading', e => {
+window.addEventListener('deviceorientation', e => {
     if(props.gyro){
-        props.gravityX = gyroscope.z / 90 * maxGravity
-        props.gravityY = gyroscope.y / 90 * maxGravity
+        props.gravityX = e.gamma / 90 * maxGravity
+        props.gravityY = e.beta / 90 * maxGravity
     }
 })
-gyroscope.start()
 
 let touches = []
 
