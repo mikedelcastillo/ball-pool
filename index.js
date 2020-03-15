@@ -16,25 +16,28 @@ function resizeHandler(){
 window.addEventListener("resize", resizeHandler)
 resizeHandler()
 
+const maxGravity = 0.1
+
 const props = {
     balls: 500,
 
     gravityX: 0,
     gravityY: 0.1,
+    gyro: false,
 
-    friction: 0.99,
+    friction: 0.999,
     bounce: 0.9,
 
     size: 24,
     sizeRandom: 0.6,
 
-    background: [30, 20, 100],
-    hot: [180, 0, 100],
-    cold: [255, 180, 180],
+    background: [30, 30, 30],
+    hot: [255, 255, 0],
+    cold: [255, 0, 0],
 
     trail: 50,
 
-    maxSpeed: 3,
+    maxSpeed: 10,
     constantSpeed: false,
 
     chunkSize: 4,
@@ -42,7 +45,10 @@ const props = {
 
     heatDelay: 20,
 
-    touchRadius: 50,
+    touchRadius: 75,
+    touchEffect: 1,
+
+    cursor: true,
 }
 
 const gui = new dat.GUI()
@@ -64,14 +70,30 @@ gui.add(props, "trail", 0, 100).step(0.1).name("Trail")
 gui.addColor(props, "hot").name("Hot")
 gui.addColor(props, "cold").name("Cold")
 
-gui.add(props, "gravityX", -.1, .1).step(0.01).name("Gravity X")
-gui.add(props, "gravityY", -.1, .1).step(0.01).name("Gravity Y")
+gui.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Gravity X").listen()
+gui.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Gravity Y").listen()
+gui.add(props, "gyro").name("Gyroscope")
 
-gui.add(props, "friction", 0.9, 1).step(0.001).name("Friction")
-gui.add(props, "bounce", 0.5, 1).step(0.1).name("Bounce")
+// gui.add(props, "friction", 0.9, 1).step(0.001).name("Friction")
+// gui.add(props, "bounce", 0.5, 1).step(0.1).name("Bounce")
 
-gui.add(props, "maxSpeed", 1, 7).step(0.001).name("Max Speed")
+gui.add(props, "maxSpeed", 1, 10).step(0.001).name("Max Speed")
 gui.add(props, "constantSpeed").name("Constant Speed")
+
+gui.add(props, 'cursor').name("Show Cursor")
+.onFinishChange(value => {
+    document.body.setAttribute("class", value ? "" : "no-cursor")
+})
+
+let gyroscope = new Gyroscope({frequency: 60})
+
+gyroscope.addEventListener('reading', e => {
+    if(props.gyro){
+        props.gravityX = gyroscope.z / 90 * maxGravity
+        props.gravityY = gyroscope.y / 90 * maxGravity
+    }
+})
+gyroscope.start()
 
 let touches = []
 
@@ -97,10 +119,10 @@ function mouseHandler(e){
         mouse.vy = y - mouse.y
         mouse.x = x
         mouse.y = y
+    }
 
-        if(e.type === "mouseup"){
-            touches.splice(touches.indexOf(mouse), 1)
-        }
+    if(e.type === "mouseup"){
+        touches = touches.filter(touch => touch.id !== "mouse")
     }
 }
 
@@ -218,6 +240,20 @@ function loop(){
         ball.radius = (props.size - (0.5 * props.size * ball.random * props.sizeRandom)) / 2
         ball.mass = Math.PI * ball.radius * ball.radius
         ball.bumps = 0
+
+        for(let touch of touches){
+            let dx = touch.x - ball.x
+            let dy = touch.y - ball.y
+            let dist2 = dx * dx + dy * dy
+            let diff = props.touchRadius / dist2
+
+            if(dist2 < props.touchRadius * props.touchRadius){
+                ball.vx += touch.vx * props.touchEffect + dx * diff
+                ball.vy += touch.vy * props.touchEffect + dy * diff
+                ball.x = touch.x - dx
+                ball.y = touch.y - dy
+            }
+        }
     }
 
     for(let i = 0; i < chunks.length; i++){
@@ -319,7 +355,7 @@ function loop(){
     }
 
     // Draw
-    const backgroundAlpha = 0.1 * (1 - props.trail/100)
+    const backgroundAlpha = props.trail === 0 ? 1 : 0.1 + 0.2 * (1 - props.trail/100)
     context.fillStyle = `rgba(${props.background[0]}, ${props.background[1]}, ${props.background[2]}, ${backgroundAlpha})`
     context.fillRect(0, 0, canvas.width, canvas.height)
 
