@@ -96,7 +96,9 @@ function requestGyro(){
     try{
         if(typeof DeviceOrientationEvent.requestPermission === "function"){
             window.DeviceOrientationEvent.requestPermission()
-            .then(perm => props.gyro = perm === "granted")
+            .then(perm => {
+                
+            })
             .catch(console.warn)
         }
     } catch(e){
@@ -112,7 +114,7 @@ window.addEventListener('deviceorientation', e => {
         let beta = (e.beta || 0) % 180
 
         gamma = Math.abs(gamma) > 90 ? Math.sign(gamma) * 90 - gamma % 90 : gamma
-        beta = Math.abs(beta) > 90 ? Math.sign(beta) * 90 - beta % 90 : beta
+        beta = Math.abs(beta) > 90 ? -(Math.sign(beta) * 90 - beta % 90) : beta
 
         props.gravityX = gamma / 90 * maxGravity
         props.gravityY = beta / 90 * maxGravity
