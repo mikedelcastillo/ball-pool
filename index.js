@@ -13,22 +13,22 @@ function resizeHandler(){
     canvas.height = window.innerHeight
 }
 
-window.addEventListener("resize", resizeHandler)
+canvas.addEventListener("resize", resizeHandler)
 resizeHandler()
 
 const maxGravity = 0.1
 
 const props = {
-    balls: 500,
+    balls: 450,
 
     gravityX: 0,
     gravityY: 0.1,
     gyro: false,
 
-    friction: 0.999,
+    friction: 0.9999,
     bounce: 0.9,
 
-    size: 24,
+    size: 18,
     sizeRandom: 0.6,
 
     background: [10, 10, 10],
@@ -52,7 +52,9 @@ const props = {
 }
 
 const gui = new dat.GUI()
-gui.add(props, "balls", 50, 3000).step(1).name("Balls")
+const folder1 = gui.addFolder("Motion")
+folder1.open()
+folder1.add(props, "balls", 50, 3000).step(1).name("Balls")
 .onChange(value => {
     let diff = value - balls.length
 
@@ -62,48 +64,55 @@ gui.add(props, "balls", 50, 3000).step(1).name("Balls")
     }
 })
 
-gui.add(props, "size", 16, 32).step(0.001).name("Size")
-gui.add(props, "sizeRandom", 0, 1).step(0.001).name("Random Size")
+folder1.add(props, "size", 16, 32).step(0.001).name("Size").listen()
+folder1.add(props, "sizeRandom", 0, 1).step(0.001).name("Random Size").listen()
+folder1.add(props, "maxSpeed", 1, 10).step(0.001).name("Max Speed")
+folder1.add(props, "constantSpeed").name("Constant Speed")
 
-gui.addColor(props, "background").name("Background")
-gui.add(props, "trail", 0, 100).step(0.1).name("Trail")
-gui.addColor(props, "hot").name("Hot")
-gui.addColor(props, "cold").name("Cold")
 
-gui.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Gravity X").listen()
-gui.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Gravity Y").listen()
-const guiGyro = gui.add(props, "gyro").name("Gyroscope").listen()
-.onChange(value => {
-    if(value){
-        if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
-            DeviceOrientationEvent.requestPermission()
-            .then(perm => props.gyro = perm === "granted")
-            .catch(console.warn)
-        }
-    }
-})
+const gravityFolder = folder1.addFolder("Gravity")
+gravityFolder.open()
+gravityFolder.add(props, "gyro").name("Use Gyroscope").listen()
+gravityFolder.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Horizontal").listen()
+gravityFolder.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Vertical").listen()
 
 // gui.add(props, "friction", 0.9, 1).step(0.001).name("Friction")
 // gui.add(props, "bounce", 0.5, 1).step(0.1).name("Bounce")
 
-gui.add(props, "maxSpeed", 1, 10).step(0.001).name("Max Speed")
-gui.add(props, "constantSpeed").name("Constant Speed")
+const folder2 = gui.addFolder("Appearance")
+folder2.open()
+folder2.addColor(props, "background").name("Background")
+folder2.addColor(props, "hot").name("Hot")
+folder2.addColor(props, "cold").name("Cold")
+folder2.add(props, "trail", 0, 100).step(0.1).name("Trail")
 
-gui.add(props, 'cursor').name("Show Cursor")
+
+folder2.add(props, 'cursor').name("Show Cursor")
 .onFinishChange(value => {
     document.body.setAttribute("class", value ? "" : "no-cursor")
 })
 
+canvas.addEventListener("click", () => {
+    if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
+        DeviceOrientationEvent.requestPermission()
+        .then(perm => props.gyro = perm === "granted")
+        .catch(console.warn)
+    }
+})
+
 window.addEventListener('deviceorientation', e => {
     if(props.gyro){
-        let gamma = e.gamma || 0
-        let beta = e.beta || 0
+        let gamma = (e.gamma || 0) % 180
+        let beta = (e.beta || 0) % 180
 
-        console.log(e, gamma, beta)
+        gamma = Math.abs(gamma) > 90 ? Math.sign(gamma) * 90 - gamma % 90 : gamma
+        beta = Math.abs(beta) > 90 ? Math.sign(beta) * 90 - beta % 90 : beta
+
         props.gravityX = gamma / 90 * maxGravity
         props.gravityY = beta / 90 * maxGravity
     }
 })
+
 
 let touches = []
 
@@ -136,9 +145,9 @@ function mouseHandler(e){
     }
 }
 
-window.addEventListener("mousedown", mouseHandler)
-window.addEventListener("mousemove", mouseHandler)
-window.addEventListener("mouseup", mouseHandler)
+canvas.addEventListener("mousedown", mouseHandler)
+canvas.addEventListener("mousemove", mouseHandler)
+canvas.addEventListener("mouseup", mouseHandler)
 
 function touchHandler(e){
     let ids = ["mouse"]
@@ -175,9 +184,9 @@ function touchHandler(e){
     }
 }
 
-window.addEventListener("touchstart", touchHandler)
-window.addEventListener("touchmove", touchHandler)
-window.addEventListener("touchend", touchHandler)
+canvas.addEventListener("touchstart", touchHandler)
+canvas.addEventListener("touchmove", touchHandler)
+canvas.addEventListener("touchend", touchHandler)
 
 function addBall(x = canvas.width / 2 + (0.5 - Math.random()), y = canvas.height / 2 + (0.5 - Math.random())){
     let ball = {
