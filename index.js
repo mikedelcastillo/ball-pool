@@ -73,11 +73,12 @@ gui.addColor(props, "cold").name("Cold")
 gui.add(props, "gravityX", -maxGravity, maxGravity).step(0.01).name("Gravity X").listen()
 gui.add(props, "gravityY", -maxGravity, maxGravity).step(0.01).name("Gravity Y").listen()
 const guiGyro = gui.add(props, "gyro").name("Gyroscope").listen()
-.onChange(async value => {
+.onChange(value => {
     if(value){
-        if(DeviceOrientationEvent && DeviceOrientationEvent.requestPermission){
-            let perm = await DeviceOrientationEvent.requestPermission()
-            props.gyro = perm === "granted" 
+        if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
+            DeviceOrientationEvent.requestPermission()
+            .then(perm => props.gyro = perm === "granted")
+            .catch(console.warn)
         }
     }
 })
@@ -95,8 +96,12 @@ gui.add(props, 'cursor').name("Show Cursor")
 
 window.addEventListener('deviceorientation', e => {
     if(props.gyro){
-        props.gravityX = e.gamma / 90 * maxGravity
-        props.gravityY = e.beta / 90 * maxGravity
+        let gamma = e.gamma || 0
+        let beta = e.beta || 0
+
+        console.log(e, gamma, beta)
+        props.gravityX = gamma / 90 * maxGravity
+        props.gravityY = beta / 90 * maxGravity
     }
 })
 
