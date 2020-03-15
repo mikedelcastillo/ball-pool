@@ -13,7 +13,7 @@ function resizeHandler(){
     canvas.height = window.innerHeight
 }
 
-canvas.addEventListener("resize", resizeHandler)
+window.addEventListener("resize", resizeHandler)
 resizeHandler()
 
 const maxGravity = 0.1
