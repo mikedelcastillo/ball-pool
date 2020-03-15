@@ -41,6 +41,8 @@ const props = {
     chunkRadius: 1,
 
     heatDelay: 20,
+
+    touchRadius: 50,
 }
 
 const gui = new dat.GUI()
@@ -70,6 +72,80 @@ gui.add(props, "bounce", 0.5, 1).step(0.1).name("Bounce")
 
 gui.add(props, "maxSpeed", 1, 7).step(0.001).name("Max Speed")
 gui.add(props, "constantSpeed").name("Constant Speed")
+
+let touches = []
+
+function mouseHandler(e){
+    let mouse = touches.find(touch => touch.id == "mouse")
+    let x = e.pageX
+    let y = e.pageY
+
+    if(e.type === "mousedown"){
+        mouse = {
+            id: "mouse",
+            x,
+            y,
+            vx: 0,
+            vy: 0,
+        }
+
+        touches.push(mouse)
+    }
+
+    if(mouse){
+        mouse.vx = x - mouse.x
+        mouse.vy = y - mouse.y
+        mouse.x = x
+        mouse.y = y
+
+        if(e.type === "mouseup"){
+            touches.splice(touches.indexOf(mouse), 1)
+        }
+    }
+}
+
+window.addEventListener("mousedown", mouseHandler)
+window.addEventListener("mousemove", mouseHandler)
+window.addEventListener("mouseup", mouseHandler)
+
+function touchHandler(e){
+    let ids = ["mouse"]
+    for(let i = 0; i < e.touches.length; i++){
+        let finger = e.touches[i]
+        let x = finger.pageX
+        let y = finger.pageY
+        // Find in array
+        let touch = touches.find(touch => touch.id === finger.identifier)
+        // if not in array, add
+        if(!touch){
+            touch = {
+                id: finger.identifier,
+                x,
+                y,
+                vx: 0,
+                vy: 0,
+            }
+            touches.push(touch)
+        }
+
+        // update
+        touch.vx = x - touch.x
+        touch.vy = y - touch.y
+        touch.x = x
+        touch.y = y
+        ids.push(touch.id)
+    }
+
+    for(let touch of touches){
+        if(!ids.includes(touch.id)){
+            touches.splice(touches.indexOf(touch), 1)
+        }
+    }
+}
+
+window.addEventListener("touchstart", touchHandler)
+window.addEventListener("touchmove", touchHandler)
+window.addEventListener("touchend", touchHandler)
 
 function addBall(x = canvas.width / 2 + (0.5 - Math.random()), y = canvas.height / 2 + (0.5 - Math.random())){
     let ball = {
@@ -197,28 +273,28 @@ function loop(){
         if(ball.x - ball.radius < 0){
             ball.x = ball.radius
             ball.vx *= -props.bounce
-            ball.bumps += 5
+            ball.bumps ++
         }
 
         if(ball.y - ball.radius < 0){
             ball.y = ball.radius
             ball.vy *= -props.bounce
-            ball.bumps += 5
+            ball.bumps ++
         }
 
         if(ball.x + ball.radius > canvas.width){
             ball.x = canvas.width - ball.radius
             ball.vx *= -props.bounce
-            ball.bumps += 5
+            ball.bumps ++
         }
 
         if(ball.y + ball.radius > canvas.height){
             ball.y = canvas.height - ball.radius
             ball.vy *= -props.bounce
-            ball.bumps += 5
+            ball.bumps ++
         }
 
-        maxBumps = Math.max(ball.bumps, maxBumps, 1)
+        maxBumps = Math.max(ball.bumps, maxBumps, 10)
 
         ball.vx += props.gravityX
         ball.vy += props.gravityY
@@ -238,7 +314,7 @@ function loop(){
     }
 
     for(let ball of balls){
-        ball.bumpRatio = ball.bumps/maxBumps
+        ball.bumpRatio = Math.sqrt(ball.bumps/maxBumps)
         ball.heat += (ball.bumpRatio - ball.heat) / props.heatDelay
     }
 
