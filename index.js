@@ -94,7 +94,7 @@ folder2.add(props, 'cursor').name("Show Cursor")
 
 function requestGyro(){
     try{
-        if(window.hasOwnProperty("DeviceOrtientationEvent") && DeviceOrientationEvent.hasOwnProperty("requestPermission")){
+        if(typeof DeviceOrientationEvent.requestPermission === "function"){
             window.DeviceOrientationEvent.requestPermission()
             .then(perm => props.gyro = perm === "granted")
             .catch(console.warn)
@@ -104,7 +104,7 @@ function requestGyro(){
     }
 }
 
-canvas.addEventListener("click", requestGyro)
+document.addEventListener("click", requestGyro)
 
 window.addEventListener('deviceorientation', e => {
     if(props.gyro){
